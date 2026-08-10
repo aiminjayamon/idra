@@ -1,0 +1,582 @@
+import csv
+import os
+
+
+
+class Book:
+    def __init__(self, book_id, title, author, category):
+        self.book_id = book_id
+        self.title = title
+        self.author = author
+        self.category = category
+        self.issued_to = ""
+
+    def display(self):
+        status = "Available" if self.issued_to == "" else "Issued"
+
+        print(
+            f"{self.book_id:<8}"
+            f"{self.title:<25}"
+            f"{self.author:<20}"
+            f"{self.category:<15}"
+            f"{status:<10}"
+        )
+
+
+
+
+class Member:
+    def __init__(self, member_id, name, phone):
+        self.member_id = member_id
+        self.name = name
+        self.phone = phone
+        self.borrowed_books = []
+
+    def display(self):
+        print(
+            f"{self.member_id:<10}"
+            f"{self.name:<25}"
+            f"{self.phone:<15}"
+            f"{len(self.borrowed_books):<10}"
+        )
+
+
+
+
+class Library:
+
+    
+    categories = (
+        "Fiction",
+        "Science",
+        "Technology",
+        "History",
+        "Biography",
+        "Other"
+    )
+
+    def __init__(self):
+        
+        self.books = {}
+        self.members = {}
+
+        self.load_books()
+        self.load_members()
+
+    
+
+    def load_books(self):
+        if not os.path.exists("books.csv"):
+            return
+
+        try:
+            with open("books.csv", "r", newline="") as file:
+                reader = csv.DictReader(file)
+
+                for row in reader:
+                    book = Book(
+                        row["book_id"],
+                        row["title"],
+                        row["author"],
+                        row["category"]
+                    )
+
+                    book.issued_to = row["issued_to"]
+
+                    self.books[book.book_id] = book
+
+        except Exception as e:
+            print("Error loading books:", e)
+
+    def save_books(self):
+        try:
+            with open("books.csv", "w", newline="") as file:
+
+                fieldnames = [
+                    "book_id",
+                    "title",
+                    "author",
+                    "category",
+                    "issued_to"
+                ]
+
+                writer = csv.DictWriter(
+                    file,
+                    fieldnames=fieldnames
+                )
+
+                writer.writeheader()
+
+                for book in self.books.values():
+                    writer.writerow({
+                        "book_id": book.book_id,
+                        "title": book.title,
+                        "author": book.author,
+                        "category": book.category,
+                        "issued_to": book.issued_to
+                    })
+
+        except Exception as e:
+            print("Error saving books:", e)
+
+    def load_members(self):
+        if not os.path.exists("members.csv"):
+            return
+
+        try:
+            with open("members.csv", "r", newline="") as file:
+                reader = csv.DictReader(file)
+
+                for row in reader:
+                    member = Member(
+                        row["member_id"],
+                        row["name"],
+                        row["phone"]
+                    )
+
+                    if row["borrowed_books"]:
+                        member.borrowed_books = (
+                            row["borrowed_books"].split("|")
+                        )
+
+                    self.members[member.member_id] = member
+
+        except Exception as e:
+            print("Error loading members:", e)
+
+    def save_members(self):
+        try:
+            with open("members.csv", "w", newline="") as file:
+
+                fieldnames = [
+                    "member_id",
+                    "name",
+                    "phone",
+                    "borrowed_books"
+                ]
+
+                writer = csv.DictWriter(
+                    file,
+                    fieldnames=fieldnames
+                )
+
+                writer.writeheader()
+
+                for member in self.members.values():
+                    writer.writerow({
+                        "member_id": member.member_id,
+                        "name": member.name,
+                        "phone": member.phone,
+                        "borrowed_books": "|".join(
+                            member.borrowed_books
+                        )
+                    })
+
+        except Exception as e:
+            print("Error saving members:", e)
+
+  
+
+    def add_book(self):
+
+        print("\n add book")
+
+        book_id = input("Enter Book ID: ").strip()
+
+        if book_id == "":
+            print("Book ID cannot be empty.")
+            return
+
+        if book_id in self.books:
+            print("Book ID already exists.")
+            return
+
+        title = input("Enter Book Title: ").strip()
+        author = input("Enter Author Name: ").strip()
+
+        print("\nAvailable Categories:")
+
+        for i, category in enumerate(self.categories, 1):
+            print(f"{i}. {category}")
+
+        try:
+            choice = int(input("Select Category: "))
+
+            if choice < 1 or choice > len(self.categories):
+                print("Invalid category.")
+                return
+
+            category = self.categories[choice - 1]
+
+        except ValueError:
+            print("Please enter a valid number.")
+            return
+
+        book = Book(
+            book_id,
+            title,
+            author,
+            category
+        )
+
+        self.books[book_id] = book
+
+        self.save_books()
+
+        print("Book added successfully!")
+
+    def view_books(self):
+
+        print("\n ALL BOOKS ")
+
+        if not self.books:
+            print("No books available.")
+            return
+
+        print(
+            f"{'ID':<8}"
+            f"{'Title':<25}"
+            f"{'Author':<20}"
+            f"{'Category':<15}"
+            f"{'Status':<10}"
+        )
+
+        print("-" * 78)
+
+        for book in self.books.values():
+            book.display()
+
+    def search_book(self):
+
+        print("\n SEARCH BOOK ")
+
+        keyword = input(
+            "Enter book title, author or category: "
+        ).lower()
+
+        found = False
+
+        for book in self.books.values():
+
+            if (
+                keyword in book.title.lower()
+                or keyword in book.author.lower()
+                or keyword in book.category.lower()
+            ):
+                if not found:
+                    print(
+                        f"{'ID':<8}"
+                        f"{'Title':<25}"
+                        f"{'Author':<20}"
+                        f"{'Category':<15}"
+                        f"{'Status':<10}"
+                    )
+
+                    print("-" * 78)
+
+                book.display()
+                found = True
+
+        if not found:
+            print("No matching books found.")
+
+    def remove_book(self):
+
+        print("\n REMOVE BOOK ")
+
+        book_id = input("Enter Book ID: ").strip()
+
+        if book_id not in self.books:
+            print("Book not found.")
+            return
+
+        book = self.books[book_id]
+
+        if book.issued_to != "":
+            print("Cannot remove an issued book.")
+            return
+
+        del self.books[book_id]
+
+        self.save_books()
+
+        print("Book removed successfully.")
+
+    
+
+    def add_member(self):
+
+        print("\n ADD MEMBER ")
+
+        member_id = input("Enter Member ID: ").strip()
+
+        if member_id == "":
+            print("Member ID cannot be empty.")
+            return
+
+        if member_id in self.members:
+            print("Member already exists.")
+            return
+
+        name = input("Enter Member Name: ").strip()
+        phone = input("Enter Phone Number: ").strip()
+
+        member = Member(
+            member_id,
+            name,
+            phone
+        )
+
+        self.members[member_id] = member
+
+        self.save_members()
+
+        print("Member added successfully.")
+
+    def view_members(self):
+
+        print("\n ALL MEMBERS ")
+
+        if not self.members:
+            print("No members found.")
+            return
+
+        print(
+            f"{'ID':<10}"
+            f"{'Name':<25}"
+            f"{'Phone':<15}"
+            f"{'Books':<10}"
+        )
+
+        print("-" * 60)
+
+        for member in self.members.values():
+            member.display()
+
+    
+
+    def issue_book(self):
+
+        print("\n ISSUE BOOK ")
+
+        book_id = input("Enter Book ID: ").strip()
+        member_id = input("Enter Member ID: ").strip()
+
+        if book_id not in self.books:
+            print("Book not found.")
+            return
+
+        if member_id not in self.members:
+            print("Member not found.")
+            return
+
+        book = self.books[book_id]
+        member = self.members[member_id]
+
+        if book.issued_to != "":
+            print("Book is already issued.")
+            return
+
+        # Limit each member to 3 books
+        if len(member.borrowed_books) >= 3:
+            print("Member cannot borrow more than 3 books.")
+            return
+
+        book.issued_to = member_id
+        member.borrowed_books.append(book_id)
+
+        self.save_books()
+        self.save_members()
+
+        print(
+            f"Book '{book.title}' issued to {member.name}."
+        )
+
+  
+
+    def return_book(self):
+
+        print("\n RETURN BOOK ")
+
+        book_id = input("Enter Book ID: ").strip()
+
+        if book_id not in self.books:
+            print("Book not found.")
+            return
+
+        book = self.books[book_id]
+
+        if book.issued_to == "":
+            print("This book is not currently issued.")
+            return
+
+        member_id = book.issued_to
+
+        if member_id in self.members:
+            member = self.members[member_id]
+
+            if book_id in member.borrowed_books:
+                member.borrowed_books.remove(book_id)
+
+        book.issued_to = ""
+
+        self.save_books()
+        self.save_members()
+
+        print("Book returned successfully.")
+
+    
+
+    def issued_books(self):
+
+        print("\n ISSUED BOOKS ")
+
+        found = False
+
+        for book in self.books.values():
+
+            if book.issued_to != "":
+                found = True
+
+                member_name = "Unknown"
+
+                if book.issued_to in self.members:
+                    member_name = self.members[
+                        book.issued_to
+                    ].name
+
+                print(
+                    f"Book ID: {book.book_id}\n"
+                    f"Title: {book.title}\n"
+                    f"Issued To: {member_name}\n"
+                )
+
+        if not found:
+            print("No books are currently issued.")
+
+    
+
+    def statistics(self):
+
+        print("\n LIBRARY STATISTICS ")
+
+        total_books = len(self.books)
+        total_members = len(self.members)
+
+        issued = 0
+        available = 0
+
+        # Set - stores unique categories
+        category_set = set()
+
+        # Dictionary - category count
+        category_count = {}
+
+        for book in self.books.values():
+
+            category_set.add(book.category)
+
+            if book.issued_to == "":
+                available += 1
+            else:
+                issued += 1
+
+            if book.category in category_count:
+                category_count[book.category] += 1
+            else:
+                category_count[book.category] = 1
+
+        print("Total Books     :", total_books)
+        print("Available Books :", available)
+        print("Issued Books    :", issued)
+        print("Total Members   :", total_members)
+
+        print("\nCategories:")
+        print(category_set)
+
+        print("\nBooks by Category:")
+
+        for category, count in category_count.items():
+            print(f"{category}: {count}")
+
+    
+
+    def menu(self):
+
+        while True:
+
+            print("\n")
+            print("=" * 60)
+            print("          📚 LIBRARY MANAGEMENT SYSTEM")
+            print("=" * 60)
+
+            print("1. Add Book")
+            print("2. View All Books")
+            print("3. Search Book")
+            print("4. Remove Book")
+            print("5. Add Member")
+            print("6. View Members")
+            print("7. Issue Book")
+            print("8. Return Book")
+            print("9. View Issued Books")
+            print("10. Library Statistics")
+            print("11. Exit")
+
+            print("=" * 60)
+
+            choice = input("Enter your choice: ").strip()
+
+            if choice == "1":
+                self.add_book()
+
+            elif choice == "2":
+                self.view_books()
+
+            elif choice == "3":
+                self.search_book()
+
+            elif choice == "4":
+                self.remove_book()
+
+            elif choice == "5":
+                self.add_member()
+
+            elif choice == "6":
+                self.view_members()
+
+            elif choice == "7":
+                self.issue_book()
+
+            elif choice == "8":
+                self.return_book()
+
+            elif choice == "9":
+                self.issued_books()
+
+            elif choice == "10":
+                self.statistics()
+
+            elif choice == "11":
+                self.save_books()
+                self.save_members()
+
+                print("\nThank you for using the Library Management System!")
+                print("Goodbye! 👋")
+                break
+
+            else:
+                print("Invalid choice! Please select 1-11.")
+
+
+
+
+try:
+
+    library = Library()
+    library.menu()
+
+except KeyboardInterrupt:
+    print("\n\nProgram stopped by user.")
+
+except Exception as e:
+    print("Unexpected error:", e)

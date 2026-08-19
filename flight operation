@@ -1,0 +1,703 @@
+
+
+import pandas as pd
+import numpy as np
+
+
+file_path = "Flight_Operations.csv"
+
+df = pd.read_csv(file_path)
+
+print("=" * 70)
+print("FLIGHT OPERATIONS DATA ANALYSIS")
+print("=" * 70)
+
+print("\nDataset loaded successfully!")
+print("Rows:", df.shape[0])
+print("Columns:", df.shape[1])
+
+
+
+
+print("\n" + "=" * 70)
+print("FIRST 5 ROWS")
+print("=" * 70)
+display(df.head())
+
+print("\n" + "=" * 70)
+print("LAST 5 ROWS")
+print("=" * 70)
+display(df.tail())
+
+print("\n" + "=" * 70)
+print("RANDOM SAMPLE")
+print("=" * 70)
+display(df.sample(min(5, len(df)), random_state=42))
+
+print("\n" + "=" * 70)
+print("DATASET SHAPE")
+print("=" * 70)
+print("Shape:", df.shape)
+
+print("\n" + "=" * 70)
+print("COLUMN NAMES")
+print("=" * 70)
+print(df.columns.tolist())
+
+print("\n" + "=" * 70)
+print("INDEX")
+print("=" * 70)
+print(df.index)
+
+print("\n" + "=" * 70)
+print("DATA TYPES")
+print("=" * 70)
+print(df.dtypes)
+
+
+
+print("\n" + "=" * 70)
+print("DATASET INFORMATION")
+print("=" * 70)
+df.info()
+
+
+
+
+print("\n" + "=" * 70)
+print("DESCRIPTIVE STATISTICS")
+print("=" * 70)
+display(df.describe(include="all").transpose())
+
+
+
+print("\n" + "=" * 70)
+print("MISSING VALUE ANALYSIS")
+print("=" * 70)
+
+missing = df.isnull().sum()
+
+missing_table = pd.DataFrame({
+    "Missing Values": missing,
+    "Missing Percentage": (missing / len(df) * 100).round(2)
+})
+
+display(missing_table)
+
+print("Total missing values:", df.isnull().sum().sum())
+
+
+
+print("\n" + "=" * 70)
+print("DUPLICATE RECORDS")
+print("=" * 70)
+
+duplicates = df.duplicated().sum()
+
+print("Number of duplicate rows:", duplicates)
+
+
+# ------------------------------------------------------------
+# 7. UNIQUE VALUES
+# ------------------------------------------------------------
+
+print("\n" + "=" * 70)
+print("UNIQUE VALUES")
+print("=" * 70)
+
+for column in df.columns:
+    print(
+        f"{column}: {df[column].nunique()} unique values"
+    )
+
+
+
+print("\n" + "=" * 70)
+print("DATA SELECTION")
+print("=" * 70)
+
+# Select first column
+print("First column:")
+display(df.iloc[:, [0]].head())
+
+# Select first five columns
+print("First five columns:")
+display(df.iloc[:, :5].head())
+
+
+
+numeric_columns = df.select_dtypes(
+    include=np.number
+).columns.tolist()
+
+categorical_columns = df.select_dtypes(
+    include="object"
+).columns.tolist()
+
+print("\n" + "=" * 70)
+print("NUMERICAL COLUMNS")
+print("=" * 70)
+print(numeric_columns)
+
+print("\n" + "=" * 70)
+print("CATEGORICAL COLUMNS")
+print("=" * 70)
+print(categorical_columns)
+
+
+
+
+if len(numeric_columns) > 0:
+
+    main_numeric = numeric_columns[0]
+
+    print("\n" + "=" * 70)
+    print("NUMERICAL DATA ANALYSIS")
+    print("=" * 70)
+
+    print("Selected numerical column:", main_numeric)
+
+    print(
+        "Total:",
+        df[main_numeric].sum()
+    )
+
+    print(
+        "Average:",
+        round(df[main_numeric].mean(), 2)
+    )
+
+    print(
+        "Maximum:",
+        df[main_numeric].max()
+    )
+
+    print(
+        "Minimum:",
+        df[main_numeric].min()
+    )
+
+    print(
+        "Median:",
+        df[main_numeric].median()
+    )
+
+
+
+
+print("\n" + "=" * 70)
+print("FILTERING DATA")
+print("=" * 70)
+
+if len(numeric_columns) > 0:
+
+    main_numeric = numeric_columns[0]
+
+    median_value = df[main_numeric].median()
+
+    filtered_data = df[
+        df[main_numeric] > median_value
+    ]
+
+    print(
+        f"Records where {main_numeric} "
+        f"is greater than its median:"
+    )
+
+    display(filtered_data.head(10))
+
+
+
+
+print("\n" + "=" * 70)
+print("MULTIPLE CONDITION FILTERING")
+print("=" * 70)
+
+if len(numeric_columns) > 0:
+
+    main_numeric = numeric_columns[0]
+
+    mean_value = df[main_numeric].mean()
+
+    filtered_multiple = df[
+        (df[main_numeric] > mean_value) &
+        (df[main_numeric].notna())
+    ]
+
+    print(
+        f"Records where {main_numeric} "
+        f"is greater than its mean:"
+    )
+
+    display(filtered_multiple.head(10))
+
+
+
+
+print("\n" + "=" * 70)
+print("SORTING DATA")
+print("=" * 70)
+
+if len(numeric_columns) > 0:
+
+    main_numeric = numeric_columns[0]
+
+    sorted_data = df.sort_values(
+        by=main_numeric,
+        ascending=False
+    )
+
+    print(
+        f"Top records sorted by {main_numeric}:"
+    )
+
+    display(sorted_data.head(10))
+
+
+print("\n" + "=" * 70)
+print("DATA TRANSFORMATION")
+print("=" * 70)
+
+analysis_df = df.copy()
+
+
+for column in analysis_df.columns:
+
+    if "date" in column.lower():
+
+        analysis_df[column] = pd.to_datetime(
+            analysis_df[column],
+            errors="coerce"
+        )
+
+        print(
+            f"{column} converted to datetime."
+        )
+
+
+
+
+date_columns = [
+    column
+    for column in analysis_df.columns
+    if pd.api.types.is_datetime64_any_dtype(
+        analysis_df[column]
+    )
+]
+
+if len(date_columns) > 0:
+
+    date_column = date_columns[0]
+
+    analysis_df["Year"] = (
+        analysis_df[date_column].dt.year
+    )
+
+    analysis_df["Month"] = (
+        analysis_df[date_column].dt.month
+    )
+
+    analysis_df["Day"] = (
+        analysis_df[date_column].dt.day
+    )
+
+    print("\nDate transformation completed.")
+
+    display(
+        analysis_df[
+            [date_column, "Year", "Month", "Day"]
+        ].head()
+    )
+
+
+
+
+print("\n" + "=" * 70)
+print("GROUPBY ANALYSIS")
+print("=" * 70)
+
+if len(categorical_columns) > 0:
+
+    group_column = categorical_columns[0]
+
+    group_counts = (
+        analysis_df[group_column]
+        .value_counts()
+    )
+
+    print(
+        f"Number of records by {group_column}:"
+    )
+
+    display(group_counts)
+
+
+
+
+print("\n" + "=" * 70)
+print("GROUPBY AND AGGREGATION")
+print("=" * 70)
+
+if (
+    len(categorical_columns) > 0
+    and len(numeric_columns) > 0
+):
+
+    group_column = categorical_columns[0]
+    value_column = numeric_columns[0]
+
+    grouped_analysis = (
+        analysis_df
+        .groupby(group_column)[value_column]
+        .agg([
+            "count",
+            "sum",
+            "mean",
+            "min",
+            "max"
+        ])
+        .sort_values(
+            "sum",
+            ascending=False
+        )
+    )
+
+    print(
+        f"{value_column} analysis by {group_column}:"
+    )
+
+    display(grouped_analysis)
+
+
+
+
+print("\n" + "=" * 70)
+print("TOP PERFORMING GROUPS")
+print("=" * 70)
+
+if (
+    len(categorical_columns) > 0
+    and len(numeric_columns) > 0
+):
+
+    display(
+        grouped_analysis.head(10)
+    )
+
+
+
+
+print("\n" + "=" * 70)
+print("AIRLINE ANALYSIS")
+print("=" * 70)
+
+if "Airline" in analysis_df.columns:
+
+    airline_analysis = (
+        analysis_df["Airline"]
+        .value_counts()
+    )
+
+    display(airline_analysis)
+
+
+
+
+print("\n" + "=" * 70)
+print("LOCATION / AIRPORT ANALYSIS")
+print("=" * 70)
+
+location_columns = [
+    column
+    for column in analysis_df.columns
+    if any(
+        word in column.lower()
+        for word in [
+            "airport",
+            "city",
+            "origin",
+            "destination"
+        ]
+    )
+]
+
+print("Location-related columns:")
+print(location_columns)
+
+if len(location_columns) > 0:
+
+    location_column = location_columns[0]
+
+    location_analysis = (
+        analysis_df[location_column]
+        .value_counts()
+        .head(10)
+    )
+
+    print(
+        f"Top values in {location_column}:"
+    )
+
+    display(location_analysis)
+
+
+
+print("\n" + "=" * 70)
+print("FLIGHT STATUS ANALYSIS")
+print("=" * 70)
+
+status_columns = [
+    column
+    for column in analysis_df.columns
+    if "status" in column.lower()
+]
+
+print("Status columns:", status_columns)
+
+if len(status_columns) > 0:
+
+    status_column = status_columns[0]
+
+    status_analysis = (
+        analysis_df[status_column]
+        .value_counts()
+    )
+
+    display(status_analysis)
+
+
+
+
+print("\n" + "=" * 70)
+print("DELAY ANALYSIS")
+print("=" * 70)
+
+delay_columns = [
+    column
+    for column in analysis_df.columns
+    if "delay" in column.lower()
+]
+
+print("Delay columns:", delay_columns)
+
+if len(delay_columns) > 0:
+
+    delay_column = delay_columns[0]
+
+    print(
+        "Average delay:",
+        round(
+            analysis_df[delay_column].mean(),
+            2
+        )
+    )
+
+    print(
+        "Maximum delay:",
+        analysis_df[delay_column].max()
+    )
+
+    print(
+        "Minimum delay:",
+        analysis_df[delay_column].min()
+    )
+
+    print("\nTop 10 delayed flights:")
+
+    display(
+        analysis_df
+        .sort_values(
+            delay_column,
+            ascending=False
+        )
+        .head(10)
+    )
+
+
+
+
+print("\n" + "=" * 70)
+print("MONTH-WISE FLIGHT ANALYSIS")
+print("=" * 70)
+
+if "Month" in analysis_df.columns:
+
+    monthly_analysis = (
+        analysis_df
+        .groupby("Month")
+        .size()
+        .sort_index()
+    )
+
+    display(monthly_analysis)
+
+
+
+
+print("\n" + "=" * 70)
+print("MEANINGFUL QUESTIONS AND ANSWERS")
+print("=" * 70)
+
+
+print("\n1. Which group has the most records?")
+
+if len(categorical_columns) > 0:
+
+    group_column = categorical_columns[0]
+
+    most_common = (
+        analysis_df[group_column]
+        .value_counts()
+        .idxmax()
+    )
+
+    print(
+        f"{most_common} has the highest number "
+        f"of records."
+    )
+
+
+
+print("\n2. What is the average numerical value?")
+
+if len(numeric_columns) > 0:
+
+    value_column = numeric_columns[0]
+
+    print(
+        f"Average {value_column}:",
+        round(
+            analysis_df[value_column].mean(),
+            2
+        )
+    )
+
+
+
+print("\n3. What is the highest numerical value?")
+
+if len(numeric_columns) > 0:
+
+    print(
+        f"Highest {value_column}:",
+        analysis_df[value_column].max()
+    )
+
+
+
+print("\n4. What is the lowest numerical value?")
+
+if len(numeric_columns) > 0:
+
+    print(
+        f"Lowest {value_column}:",
+        analysis_df[value_column].min()
+    )
+
+
+
+
+print("\n" + "=" * 70)
+print("KEY OBSERVATIONS")
+print("=" * 70)
+
+print(
+    f"\n1. The dataset contains "
+    f"{analysis_df.shape[0]} records and "
+    f"{analysis_df.shape[1]} columns."
+)
+
+if len(categorical_columns) > 0:
+
+    group_column = categorical_columns[0]
+
+    counts = (
+        analysis_df[group_column]
+        .value_counts()
+    )
+
+    print(
+        f"\n2. The most frequently occurring "
+        f"{group_column} is "
+        f"{counts.index[0]}, "
+        f"with {counts.iloc[0]} records."
+    )
+
+if len(numeric_columns) > 0:
+
+    value_column = numeric_columns[0]
+
+    print(
+        f"\n3. The average "
+        f"{value_column} is "
+        f"{analysis_df[value_column].mean():.2f}."
+    )
+
+    print(
+        f"\n4. The highest "
+        f"{value_column} is "
+        f"{analysis_df[value_column].max()}."
+    )
+
+    print(
+        f"\n5. The lowest "
+        f"{value_column} is "
+        f"{analysis_df[value_column].min()}."
+    )
+
+print(
+    f"\n6. The dataset contains "
+    f"{analysis_df.isnull().sum().sum()} "
+    f"missing values."
+)
+
+print(
+    f"\n7. The dataset contains "
+    f"{analysis_df.duplicated().sum()} "
+    f"duplicate records."
+)
+
+if len(categorical_columns) > 0:
+
+    group_column = categorical_columns[0]
+
+    print(
+        f"\n8. The {group_column} column contains "
+        f"{analysis_df[group_column].nunique()} "
+        f"unique groups."
+    )
+
+
+
+print("\n" + "=" * 70)
+print("CONCLUSION")
+print("=" * 70)
+
+print("""
+The Flight Operations dataset was analyzed using a complete
+Pandas data analysis workflow.
+
+The analysis included:
+
+• Loading and understanding the dataset
+• Inspecting rows, columns, index and data types
+• Descriptive statistics
+• Missing-value analysis
+• Duplicate-value analysis
+• Data selection
+• Data filtering
+• Sorting
+• Data transformation
+• Grouping and aggregation
+• Airline analysis where available
+• Airport/location analysis where available
+• Flight-status analysis where available
+• Delay analysis where available
+• Date and month-based analysis
+• Identification of important patterns and findings
+
+These analyses provide useful insights into flight operations
+and can help identify important operational patterns,
+frequent groups, unusual values and possible areas for
+further investigation.
+""")

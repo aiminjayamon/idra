@@ -1,0 +1,532 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+df = pd.read_csv("Day14_Food_Delivery_Visualization_Dataset.csv")
+
+df["Date"] = pd.to_datetime(df["Date"])
+
+print("Dataset Shape:", df.shape)
+print("\nFirst 5 Rows:")
+print(df.head())
+
+print("\nDataset Information:")
+print(df.info())
+
+print("\nMissing Values:")
+print(df.isnull().sum())
+
+print("\nDuplicate Rows:", df.duplicated().sum())
+
+print("\nStatistical Summary:")
+print(df.describe())
+
+sns.set_theme(style="whitegrid")
+
+# 1. Line Plot - Orders and Revenue over Time
+daily_data = df.groupby("Date").agg({
+    "Orders": "sum",
+    "Revenue": "sum"
+}).reset_index()
+
+fig, ax1 = plt.subplots(figsize=(12, 6))
+
+ax1.plot(
+    daily_data["Date"],
+    daily_data["Orders"],
+    label="Orders",
+    linewidth=2
+)
+ax1.set_xlabel("Date")
+ax1.set_ylabel("Orders")
+ax1.set_title("Orders and Revenue Over Time")
+ax1.tick_params(axis="x", rotation=45)
+
+ax2 = ax1.twinx()
+ax2.plot(
+    daily_data["Date"],
+    daily_data["Revenue"],
+    label="Revenue",
+    linewidth=2
+)
+ax2.set_ylabel("Revenue")
+
+fig.tight_layout()
+plt.show()
+
+print("""
+Interpretation:
+The line plot shows how order volume and revenue change over time.
+Peaks indicate periods of stronger business activity, while lower points
+represent relatively weaker performance.
+""")
+
+# 2. Bar Chart - Revenue by City
+city_revenue = df.groupby("City")["Revenue"].sum().sort_values(ascending=False)
+
+plt.figure(figsize=(10, 6))
+sns.barplot(
+    x=city_revenue.values,
+    y=city_revenue.index
+)
+plt.title("Total Revenue by City")
+plt.xlabel("Revenue")
+plt.ylabel("City")
+plt.tight_layout()
+plt.show()
+
+print("""
+Interpretation:
+The bar chart compares total revenue across cities and identifies the
+cities contributing the most and least to overall revenue.
+""")
+
+# 3. Bar Chart - Orders by Cuisine
+cuisine_orders = df.groupby("Cuisine")["Orders"].sum().sort_values(ascending=False)
+
+plt.figure(figsize=(10, 6))
+sns.barplot(
+    x=cuisine_orders.index,
+    y=cuisine_orders.values
+)
+plt.title("Total Orders by Cuisine")
+plt.xlabel("Cuisine")
+plt.ylabel("Orders")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+print("""
+Interpretation:
+Different cuisines attract different levels of demand. The highest bar
+represents the cuisine receiving the greatest number of orders.
+""")
+
+# 4. Scatter Plot - Marketing Spend vs Revenue
+plt.figure(figsize=(10, 6))
+sns.scatterplot(
+    data=df,
+    x="Marketing_Spend",
+    y="Revenue",
+    hue="City",
+    s=80
+)
+plt.title("Marketing Spend vs Revenue")
+plt.xlabel("Marketing Spend")
+plt.ylabel("Revenue")
+plt.legend(title="City", bbox_to_anchor=(1.05, 1), loc="upper left")
+plt.tight_layout()
+plt.show()
+
+marketing_corr = df["Marketing_Spend"].corr(df["Revenue"])
+
+print(f"""
+Interpretation:
+The scatter plot investigates whether higher marketing spending is
+associated with higher revenue.
+
+Correlation between Marketing Spend and Revenue: {marketing_corr:.2f}
+""")
+
+# 5. Scatter Plot - Delivery Time vs Customer Rating
+plt.figure(figsize=(10, 6))
+sns.scatterplot(
+    data=df,
+    x="Avg_Delivery_Minutes",
+    y="Customer_Rating",
+    hue="Weather",
+    s=80
+)
+plt.title("Delivery Time vs Customer Rating")
+plt.xlabel("Average Delivery Time (Minutes)")
+plt.ylabel("Customer Rating")
+plt.legend(title="Weather")
+plt.tight_layout()
+plt.show()
+
+delivery_rating_corr = df["Avg_Delivery_Minutes"].corr(
+    df["Customer_Rating"]
+)
+
+print(f"""
+Interpretation:
+The chart examines whether delivery speed is associated with customer
+satisfaction.
+
+Correlation between Delivery Time and Customer Rating:
+{delivery_rating_corr:.2f}
+""")
+
+# 6. Histogram - Orders Distribution
+plt.figure(figsize=(10, 6))
+sns.histplot(
+    data=df,
+    x="Orders",
+    bins=20,
+    kde=True
+)
+plt.title("Distribution of Orders")
+plt.xlabel("Number of Orders")
+plt.ylabel("Frequency")
+plt.tight_layout()
+plt.show()
+
+print("""
+Interpretation:
+The histogram shows the distribution of order volumes. It helps identify
+the typical order range and whether unusually high or low order volumes
+occur.
+""")
+
+# 7. Histogram - Revenue Distribution
+plt.figure(figsize=(10, 6))
+sns.histplot(
+    data=df,
+    x="Revenue",
+    bins=20,
+    kde=True
+)
+plt.title("Distribution of Revenue")
+plt.xlabel("Revenue")
+plt.ylabel("Frequency")
+plt.tight_layout()
+plt.show()
+
+print("""
+Interpretation:
+The revenue distribution shows the typical revenue range and highlights
+whether revenue values are concentrated around a particular range.
+""")
+
+# 8. Box Plot - Revenue by City
+plt.figure(figsize=(12, 6))
+sns.boxplot(
+    data=df,
+    x="City",
+    y="Revenue"
+)
+plt.title("Revenue Distribution by City")
+plt.xlabel("City")
+plt.ylabel("Revenue")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+print("""
+Interpretation:
+The box plot compares revenue distributions between cities and shows
+differences in median revenue, spread, and possible extreme values.
+""")
+
+# 9. Box Plot - Delivery Time by Weather
+plt.figure(figsize=(10, 6))
+sns.boxplot(
+    data=df,
+    x="Weather",
+    y="Avg_Delivery_Minutes"
+)
+plt.title("Delivery Time by Weather Condition")
+plt.xlabel("Weather")
+plt.ylabel("Average Delivery Time (Minutes)")
+plt.tight_layout()
+plt.show()
+
+print("""
+Interpretation:
+Weather conditions can influence delivery performance. The box plot
+shows which weather conditions are associated with longer or shorter
+delivery times.
+""")
+
+# 10. Violin Plot - Customer Rating by Order Channel
+plt.figure(figsize=(10, 6))
+sns.violinplot(
+    data=df,
+    x="Order_Channel",
+    y="Customer_Rating"
+)
+plt.title("Customer Ratings by Order Channel")
+plt.xlabel("Order Channel")
+plt.ylabel("Customer Rating")
+plt.xticks(rotation=20)
+plt.tight_layout()
+plt.show()
+
+print("""
+Interpretation:
+The violin plot shows the distribution of customer ratings for each
+order channel and allows comparison of rating concentration and spread.
+""")
+
+# 11. Violin Plot - Revenue by Cuisine
+plt.figure(figsize=(12, 6))
+sns.violinplot(
+    data=df,
+    x="Cuisine",
+    y="Revenue"
+)
+plt.title("Revenue Distribution by Cuisine")
+plt.xlabel("Cuisine")
+plt.ylabel("Revenue")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+print("""
+Interpretation:
+The violin plot highlights differences in revenue distribution across
+cuisines and shows where revenue values are most concentrated.
+""")
+
+# 12. Count Plot - Orders by Order Channel
+plt.figure(figsize=(10, 6))
+sns.countplot(
+    data=df,
+    x="Order_Channel"
+)
+plt.title("Number of Records by Order Channel")
+plt.xlabel("Order Channel")
+plt.ylabel("Count")
+plt.xticks(rotation=20)
+plt.tight_layout()
+plt.show()
+
+print("""
+Interpretation:
+The count plot shows how frequently each order channel appears in the
+dataset and indicates the relative importance of different channels.
+""")
+
+# 13. Count Plot - Weather Conditions
+plt.figure(figsize=(10, 6))
+sns.countplot(
+    data=df,
+    x="Weather"
+)
+plt.title("Distribution of Weather Conditions")
+plt.xlabel("Weather")
+plt.ylabel("Count")
+plt.tight_layout()
+plt.show()
+
+print("""
+Interpretation:
+The chart shows the frequency of different weather conditions represented
+in the dataset.
+""")
+
+# 14. Bar Chart - Revenue by Order Channel
+channel_revenue = df.groupby("Order_Channel")["Revenue"].sum().sort_values(
+    ascending=False
+)
+
+plt.figure(figsize=(10, 6))
+sns.barplot(
+    x=channel_revenue.index,
+    y=channel_revenue.values
+)
+plt.title("Total Revenue by Order Channel")
+plt.xlabel("Order Channel")
+plt.ylabel("Revenue")
+plt.xticks(rotation=20)
+plt.tight_layout()
+plt.show()
+
+print("""
+Interpretation:
+The chart compares total revenue generated through different order
+channels and identifies the strongest revenue-generating channel.
+""")
+
+# 15. Bar Chart - Revenue by Weather
+weather_revenue = df.groupby("Weather")["Revenue"].mean().sort_values(
+    ascending=False
+)
+
+plt.figure(figsize=(10, 6))
+sns.barplot(
+    x=weather_revenue.index,
+    y=weather_revenue.values
+)
+plt.title("Average Revenue by Weather")
+plt.xlabel("Weather")
+plt.ylabel("Average Revenue")
+plt.tight_layout()
+plt.show()
+
+print("""
+Interpretation:
+Average revenue can vary across weather conditions. This comparison
+shows which weather conditions are associated with stronger business
+performance.
+""")
+
+# 16. Bar Chart - Average Orders by Day
+day_orders = df.groupby("Day")["Orders"].mean().sort_values(ascending=False)
+
+plt.figure(figsize=(10, 6))
+sns.barplot(
+    x=day_orders.index,
+    y=day_orders.values
+)
+plt.title("Average Orders by Day of Week")
+plt.xlabel("Day")
+plt.ylabel("Average Orders")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+print("""
+Interpretation:
+Order activity differs across days of the week. The highest bar indicates
+the day with the strongest average order demand.
+""")
+
+# 17. Line Plot - Monthly Revenue
+month_order = [
+    "January", "February", "March", "April",
+    "May", "June", "July", "August",
+    "September", "October", "November", "December"
+]
+
+monthly_revenue = df.groupby("Month")["Revenue"].sum().reindex(
+    month_order
+).dropna()
+
+plt.figure(figsize=(12, 6))
+plt.plot(
+    monthly_revenue.index,
+    monthly_revenue.values,
+    marker="o",
+    linewidth=2
+)
+plt.title("Monthly Revenue Trend")
+plt.xlabel("Month")
+plt.ylabel("Total Revenue")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+print("""
+Interpretation:
+The monthly trend highlights seasonal changes in revenue and identifies
+months with particularly strong or weak business performance.
+""")
+
+# 18. Correlation Heatmap
+numeric_cols = [
+    "Orders",
+    "Average_Order_Value",
+    "Revenue",
+    "Marketing_Spend",
+    "Discounts",
+    "Avg_Delivery_Minutes",
+    "Customer_Rating",
+    "Repeat_Customer_Percent"
+]
+
+correlation_matrix = df[numeric_cols].corr()
+
+plt.figure(figsize=(12, 9))
+sns.heatmap(
+    correlation_matrix,
+    annot=True,
+    cmap="coolwarm",
+    fmt=".2f",
+    linewidths=0.5
+)
+plt.title("Correlation Heatmap of Food Delivery Performance")
+plt.tight_layout()
+plt.show()
+
+print("""
+Interpretation:
+The correlation heatmap shows the strength and direction of relationships
+between numerical variables. Values close to +1 indicate strong positive
+relationships, values close to -1 indicate strong negative relationships,
+and values close to 0 indicate weak linear relationships.
+""")
+
+# 19. Orders vs Revenue
+plt.figure(figsize=(10, 6))
+sns.scatterplot(
+    data=df,
+    x="Orders",
+    y="Revenue",
+    hue="Cuisine",
+    s=80
+)
+plt.title("Orders vs Revenue by Cuisine")
+plt.xlabel("Orders")
+plt.ylabel("Revenue")
+plt.legend(title="Cuisine", bbox_to_anchor=(1.05, 1), loc="upper left")
+plt.tight_layout()
+plt.show()
+
+orders_revenue_corr = df["Orders"].corr(df["Revenue"])
+
+print(f"""
+Interpretation:
+The scatter plot examines whether higher order volumes are associated
+with higher revenue.
+
+Orders and Revenue correlation: {orders_revenue_corr:.2f}
+""")
+
+# 20. Repeat Customers vs Rating
+plt.figure(figsize=(10, 6))
+sns.scatterplot(
+    data=df,
+    x="Customer_Rating",
+    y="Repeat_Customer_Percent",
+    hue="City",
+    s=80
+)
+plt.title("Customer Rating vs Repeat Customer Percentage")
+plt.xlabel("Customer Rating")
+plt.ylabel("Repeat Customer Percentage")
+plt.tight_layout()
+plt.show()
+
+repeat_rating_corr = df["Customer_Rating"].corr(
+    df["Repeat_Customer_Percent"]
+)
+
+print(f"""
+Interpretation:
+This visualization examines whether better customer ratings are associated
+with a higher percentage of repeat customers.
+
+Correlation: {repeat_rating_corr:.2f}
+""")
+
+# Final Summary
+top_city = df.groupby("City")["Revenue"].sum().idxmax()
+top_cuisine = df.groupby("Cuisine")["Orders"].sum().idxmax()
+top_channel = df.groupby("Order_Channel")["Revenue"].sum().idxmax()
+best_weather = df.groupby("Weather")["Revenue"].mean().idxmax()
+highest_month = monthly_revenue.idxmax()
+
+print("\n" + "=" * 70)
+print("FINAL DATA VISUALIZATION SUMMARY")
+print("=" * 70)
+
+print(f"1. {top_city} generated the highest total revenue among the cities.")
+print(f"2. {top_cuisine} recorded the highest total order volume among cuisines.")
+print(f"3. {top_channel} generated the highest total revenue among order channels.")
+print(f"4. {best_weather} had the highest average revenue among the weather conditions.")
+print(f"5. {highest_month} recorded the highest total revenue.")
+print(
+    f"6. Marketing Spend and Revenue have a correlation of "
+    f"{marketing_corr:.2f}."
+)
+print(
+    f"7. Delivery Time and Customer Rating have a correlation of "
+    f"{delivery_rating_corr:.2f}."
+)
+print(
+    f"8. Orders and Revenue have a correlation of "
+    f"{orders_revenue_corr:.2f}, showing how order volume relates to revenue."
+)
+
+print("\nVisualization portfolio completed successfully!")

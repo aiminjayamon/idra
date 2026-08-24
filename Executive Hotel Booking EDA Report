@@ -1,1 +1,564 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 
+file_path = "/mnt/data/Day15_Executive_Hotel_Booking_EDA_Dataset.csv"
+
+df = pd.read_csv(file_path)
+
+print("=" * 70)
+print("EXECUTIVE HOTEL BOOKING EDA")
+print("=" * 70)
+
+print("\n1. DATASET OVERVIEW")
+print("Shape:", df.shape)
+print("\nFirst 5 rows:")
+print(df.head())
+
+print("\nDataset Information:")
+df.info()
+
+print("\nColumn Names:")
+print(df.columns.tolist())
+
+print("\nData Types:")
+print(df.dtypes)
+
+print("\n2. DATA QUALITY CHECK")
+
+print("\nMissing Values:")
+missing = df.isnull().sum()
+missing_percent = (missing / len(df)) * 100
+
+missing_report = pd.DataFrame({
+    "Missing_Count": missing,
+    "Missing_Percentage": missing_percent
+})
+
+print(missing_report[missing_report["Missing_Count"] > 0])
+
+print("\nDuplicate Rows:", df.duplicated().sum())
+
+print("\nUnique Values:")
+for col in df.columns:
+    print(col, ":", df[col].nunique())
+
+print("\nCategorical Value Checks:")
+categorical_columns = df.select_dtypes(include="object").columns
+
+for col in categorical_columns:
+    print("\n", col)
+    print(df[col].value_counts(dropna=False).head(20))
+
+print("\n3. DATA CLEANING")
+
+df = df.drop_duplicates()
+
+if "reservation_status_date" in df.columns:
+    df["reservation_status_date"] = pd.to_datetime(
+        df["reservation_status_date"],
+        errors="coerce"
+    )
+
+if "arrival_date_month" in df.columns:
+    month_order = [
+        "January", "February", "March", "April",
+        "May", "June", "July", "August",
+        "September", "October", "November", "December"
+    ]
+
+    df["arrival_date_month"] = pd.Categorical(
+        df["arrival_date_month"],
+        categories=month_order,
+        ordered=True
+    )
+
+numeric_columns = df.select_dtypes(include=np.number).columns
+
+for col in numeric_columns:
+    if df[col].isnull().sum() > 0:
+        df[col] = df[col].fillna(df[col].median())
+
+categorical_columns = df.select_dtypes(include="object").columns
+
+for col in categorical_columns:
+    if df[col].isnull().sum() > 0:
+        df[col] = df[col].fillna("Unknown")
+
+print("\nMissing values after cleaning:")
+print(df.isnull().sum().sum())
+
+print("\nShape after cleaning:", df.shape)
+
+print("\n4. OUTLIER ANALYSIS")
+
+numeric_columns = df.select_dtypes(include=np.number).columns
+
+outlier_report = []
+
+for col in numeric_columns:
+    Q1 = df[col].quantile(0.25)
+    Q3 = df[col].quantile(0.75)
+    IQR = Q3 - Q1
+
+    lower = Q1 - 1.5 * IQR
+    upper = Q3 + 1.5 * IQR
+
+    count = ((df[col] < lower) | (df[col] > upper)).sum()
+
+    outlier_report.append([
+        col,
+        Q1,
+        Q3,
+        lower,
+        upper,
+        count
+    ])
+
+outlier_report = pd.DataFrame(
+    outlier_report,
+    columns=[
+        "Column",
+        "Q1",
+        "Q3",
+        "Lower_Bound",
+        "Upper_Bound",
+        "Outlier_Count"
+    ]
+)
+
+print(outlier_report)
+
+print("\n5. DESCRIPTIVE STATISTICS")
+print(df.describe(include="all").transpose())
+
+print("\n6. BUSINESS METRICS")
+
+if "is_canceled" in df.columns:
+    cancellation_rate = df["is_canceled"].mean() * 100
+    print("Cancellation Rate:", round(cancellation_rate, 2), "%")
+
+if "adr" in df.columns:
+    print("Average Daily Rate:", round(df["adr"].mean(), 2))
+    print("Median Daily Rate:", round(df["adr"].median(), 2))
+
+if "lead_time" in df.columns:
+    print("Average Lead Time:", round(df["lead_time"].mean(), 2), "days")
+
+if "adults" in df.columns:
+    print("Average Adults per Booking:", round(df["adults"].mean(), 2))
+
+if "stays_in_week_nights" in df.columns and "stays_in_weekend_nights" in df.columns:
+    df["total_stay_nights"] = (
+        df["stays_in_week_nights"] +
+        df["stays_in_weekend_nights"]
+    )
+
+    print(
+        "Average Total Stay:",
+        round(df["total_stay_nights"].mean(), 2),
+        "nights"
+    )
+
+if "children" in df.columns and "babies" in df.columns:
+    df["total_guests"] = (
+        df["adults"] +
+        df["children"] +
+        df["babies"]
+    )
+
+    print(
+        "Average Guests per Booking:",
+        round(df["total_guests"].mean(), 2)
+    )
+
+print("\n7. UNIVARIATE ANALYSIS")
+
+sns.set_theme(style="whitegrid")
+
+if "lead_time" in df.columns:
+    plt.figure(figsize=(10, 6))
+    sns.histplot(df["lead_time"], bins=40, kde=True)
+    plt.title("Distribution of Booking Lead Time")
+    plt.xlabel("Lead Time (Days)")
+    plt.ylabel("Number of Bookings")
+    plt.tight_layout()
+    plt.show()
+
+if "adr" in df.columns:
+    plt.figure(figsize=(10, 6))
+    sns.histplot(df["adr"], bins=40, kde=True)
+    plt.title("Distribution of Average Daily Rate")
+    plt.xlabel("ADR")
+    plt.ylabel("Number of Bookings")
+    plt.tight_layout()
+    plt.show()
+
+if "hotel" in df.columns:
+    plt.figure(figsize=(8, 5))
+    sns.countplot(data=df, x="hotel")
+    plt.title("Bookings by Hotel Type")
+    plt.xlabel("Hotel")
+    plt.ylabel("Number of Bookings")
+    plt.tight_layout()
+    plt.show()
+
+if "is_canceled" in df.columns:
+    plt.figure(figsize=(8, 5))
+    sns.countplot(data=df, x="is_canceled")
+    plt.title("Booking Cancellation Distribution")
+    plt.xlabel("Cancellation Status")
+    plt.ylabel("Number of Bookings")
+    plt.tight_layout()
+    plt.show()
+
+if "market_segment" in df.columns:
+    plt.figure(figsize=(12, 6))
+    sns.countplot(
+        data=df,
+        y="market_segment",
+        order=df["market_segment"].value_counts().index
+    )
+    plt.title("Bookings by Market Segment")
+    plt.xlabel("Number of Bookings")
+    plt.ylabel("Market Segment")
+    plt.tight_layout()
+    plt.show()
+
+print("\n8. BIVARIATE ANALYSIS")
+
+if "hotel" in df.columns and "is_canceled" in df.columns:
+    hotel_cancel = pd.crosstab(
+        df["hotel"],
+        df["is_canceled"],
+        normalize="index"
+    ) * 100
+
+    print("\nCancellation Rate by Hotel:")
+    print(hotel_cancel)
+
+    plt.figure(figsize=(8, 5))
+    sns.barplot(
+        data=df,
+        x="hotel",
+        y="is_canceled"
+    )
+    plt.title("Cancellation Rate by Hotel Type")
+    plt.xlabel("Hotel")
+    plt.ylabel("Cancellation Rate")
+    plt.tight_layout()
+    plt.show()
+
+if "market_segment" in df.columns and "is_canceled" in df.columns:
+    segment_cancel = df.groupby(
+        "market_segment"
+    )["is_canceled"].mean().sort_values(ascending=False) * 100
+
+    print("\nCancellation Rate by Market Segment:")
+    print(segment_cancel)
+
+    plt.figure(figsize=(12, 6))
+    sns.barplot(
+        x=segment_cancel.values,
+        y=segment_cancel.index
+    )
+    plt.title("Cancellation Rate by Market Segment")
+    plt.xlabel("Cancellation Rate (%)")
+    plt.ylabel("Market Segment")
+    plt.tight_layout()
+    plt.show()
+
+if "hotel" in df.columns and "adr" in df.columns:
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(
+        data=df,
+        x="hotel",
+        y="adr"
+    )
+    plt.title("ADR Distribution by Hotel Type")
+    plt.xlabel("Hotel")
+    plt.ylabel("Average Daily Rate")
+    plt.tight_layout()
+    plt.show()
+
+if "hotel" in df.columns and "lead_time" in df.columns:
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(
+        data=df,
+        x="hotel",
+        y="lead_time"
+    )
+    plt.title("Lead Time by Hotel Type")
+    plt.xlabel("Hotel")
+    plt.ylabel("Lead Time (Days)")
+    plt.tight_layout()
+    plt.show()
+
+if "deposit_type" in df.columns and "is_canceled" in df.columns:
+    deposit_cancel = df.groupby(
+        "deposit_type"
+    )["is_canceled"].mean().sort_values(ascending=False) * 100
+
+    print("\nCancellation Rate by Deposit Type:")
+    print(deposit_cancel)
+
+    plt.figure(figsize=(10, 6))
+    sns.barplot(
+        x=deposit_cancel.index,
+        y=deposit_cancel.values
+    )
+    plt.title("Cancellation Rate by Deposit Type")
+    plt.xlabel("Deposit Type")
+    plt.ylabel("Cancellation Rate (%)")
+    plt.tight_layout()
+    plt.show()
+
+if "customer_type" in df.columns and "is_canceled" in df.columns:
+    customer_cancel = df.groupby(
+        "customer_type"
+    )["is_canceled"].mean().sort_values(ascending=False) * 100
+
+    print("\nCancellation Rate by Customer Type:")
+    print(customer_cancel)
+
+    plt.figure(figsize=(10, 6))
+    sns.barplot(
+        x=customer_cancel.index,
+        y=customer_cancel.values
+    )
+    plt.title("Cancellation Rate by Customer Type")
+    plt.xlabel("Customer Type")
+    plt.ylabel("Cancellation Rate (%)")
+    plt.xticks(rotation=30)
+    plt.tight_layout()
+    plt.show()
+
+print("\n9. MONTHLY ANALYSIS")
+
+if "arrival_date_month" in df.columns:
+    monthly_bookings = df.groupby(
+        "arrival_date_month",
+        observed=False
+    ).size()
+
+    plt.figure(figsize=(12, 6))
+    sns.lineplot(
+        x=monthly_bookings.index,
+        y=monthly_bookings.values,
+        marker="o"
+    )
+    plt.title("Monthly Booking Trend")
+    plt.xlabel("Arrival Month")
+    plt.ylabel("Number of Bookings")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+    print("\nBookings by Month:")
+    print(monthly_bookings)
+
+if "arrival_date_month" in df.columns and "adr" in df.columns:
+    monthly_adr = df.groupby(
+        "arrival_date_month",
+        observed=False
+    )["adr"].mean()
+
+    plt.figure(figsize=(12, 6))
+    sns.lineplot(
+        x=monthly_adr.index,
+        y=monthly_adr.values,
+        marker="o"
+    )
+    plt.title("Average Daily Rate by Month")
+    plt.xlabel("Arrival Month")
+    plt.ylabel("Average ADR")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+    print("\nAverage ADR by Month:")
+    print(monthly_adr)
+
+print("\n10. COUNTRY ANALYSIS")
+
+if "country" in df.columns:
+    top_countries = df["country"].value_counts().head(15)
+
+    print("\nTop 15 Countries:")
+    print(top_countries)
+
+    plt.figure(figsize=(12, 6))
+    sns.barplot(
+        x=top_countries.values,
+        y=top_countries.index
+    )
+    plt.title("Top 15 Countries by Number of Bookings")
+    plt.xlabel("Number of Bookings")
+    plt.ylabel("Country")
+    plt.tight_layout()
+    plt.show()
+
+print("\n11. CORRELATION ANALYSIS")
+
+numeric_columns = df.select_dtypes(include=np.number).columns
+
+correlation_matrix = df[numeric_columns].corr()
+
+plt.figure(figsize=(16, 12))
+sns.heatmap(
+    correlation_matrix,
+    annot=True,
+    fmt=".2f",
+    cmap="coolwarm",
+    linewidths=0.5
+)
+plt.title("Hotel Booking Numerical Correlation Matrix")
+plt.tight_layout()
+plt.show()
+
+print("\nCorrelation Matrix:")
+print(correlation_matrix)
+
+print("\n12. STRONGEST CORRELATIONS")
+
+corr_pairs = correlation_matrix.unstack()
+
+corr_pairs = corr_pairs[
+    corr_pairs.index.get_level_values(0) !=
+    corr_pairs.index.get_level_values(1)
+]
+
+corr_pairs = corr_pairs.abs().sort_values(ascending=False)
+
+print(corr_pairs.head(20))
+
+print("\n13. GROUP-WISE BUSINESS ANALYSIS")
+
+if "hotel" in df.columns:
+    hotel_analysis = df.groupby("hotel").agg({
+        "is_canceled": "mean",
+        "lead_time": "mean",
+        "adr": "mean"
+    })
+
+    hotel_analysis["is_canceled"] *= 100
+
+    print("\nHotel Performance:")
+    print(hotel_analysis)
+
+if "market_segment" in df.columns:
+    segment_analysis = df.groupby("market_segment").agg({
+        "is_canceled": "mean",
+        "lead_time": "mean",
+        "adr": "mean"
+    })
+
+    segment_analysis["is_canceled"] *= 100
+
+    print("\nMarket Segment Performance:")
+    print(segment_analysis.sort_values("adr", ascending=False))
+
+if "customer_type" in df.columns:
+    customer_analysis = df.groupby("customer_type").agg({
+        "is_canceled": "mean",
+        "lead_time": "mean",
+        "adr": "mean"
+    })
+
+    customer_analysis["is_canceled"] *= 100
+
+    print("\nCustomer Type Performance:")
+    print(customer_analysis)
+
+print("\n14. FINAL BUSINESS INSIGHTS")
+
+if "hotel" in df.columns and "is_canceled" in df.columns:
+    hotel_cancel_rate = df.groupby("hotel")["is_canceled"].mean() * 100
+    highest_cancel_hotel = hotel_cancel_rate.idxmax()
+
+    print(
+        f"1. {highest_cancel_hotel} has the highest cancellation rate "
+        f"among the hotel types."
+    )
+
+if "arrival_date_month" in df.columns:
+    highest_booking_month = df.groupby(
+        "arrival_date_month",
+        observed=False
+    ).size().idxmax()
+
+    print(
+        f"2. {highest_booking_month} records the highest booking volume, "
+        f"indicating an important demand period."
+    )
+
+if "market_segment" in df.columns and "is_canceled" in df.columns:
+    highest_cancel_segment = df.groupby(
+        "market_segment"
+    )["is_canceled"].mean().idxmax()
+
+    print(
+        f"3. {highest_cancel_segment} has the highest cancellation rate "
+        f"among the market segments."
+    )
+
+if "country" in df.columns:
+    highest_country = df["country"].value_counts().idxmax()
+
+    print(
+        f"4. {highest_country} is the largest source market by booking volume."
+    )
+
+if "adr" in df.columns and "lead_time" in df.columns:
+    adr_lead_corr = df["adr"].corr(df["lead_time"])
+
+    print(
+        f"5. Lead time and ADR have a correlation of "
+        f"{adr_lead_corr:.2f}, showing the strength of their linear relationship."
+    )
+
+print("\n15. MANAGEMENT RECOMMENDATIONS")
+
+print("""
+1. Focus marketing and pricing strategies on high-demand months to
+   maximize occupancy and revenue.
+
+2. Investigate high-cancellation customer segments and introduce
+   appropriate cancellation policies, deposits, or targeted incentives.
+
+3. Monitor lead-time patterns and use dynamic pricing to adjust room
+   rates according to booking demand.
+
+4. Strengthen relationships with high-performing market segments and
+   geographic source markets.
+
+5. Develop targeted retention and promotional strategies for customer
+   groups with strong booking potential.
+
+6. Monitor ADR and cancellation patterns together rather than relying
+   on booking volume alone when evaluating hotel performance.
+
+7. Use the EDA findings as a baseline for future forecasting and
+   predictive models for occupancy, cancellations, and revenue.
+""")
+
+print("\n16. FINAL DATA QUALITY CHECK")
+
+print("Final Shape:", df.shape)
+print("Total Missing Values:", df.isnull().sum().sum())
+print("Total Duplicate Rows:", df.duplicated().sum())
+
+print("\nFinal Dataset Preview:")
+print(df.head())
+
+df.to_csv(
+    "Cleaned_Hotel_Booking_EDA_Dataset.csv",
+    index=False
+)
+
+print("\nCleaned dataset saved successfully.")
+
+print("\n" + "=" * 70)
+print("EXECUTIVE HOTEL BOOKING EDA COMPLETED")
+print("=" * 70)

@@ -1,0 +1,417 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+df = pd.read_csv("Day13_Restaurant_Branch_Performance_Dataset.csv")
+
+print("Dataset Shape:", df.shape)
+print("\nFirst 5 Rows:")
+print(df.head())
+
+print("\nLast 5 Rows:")
+print(df.tail())
+
+print("\nDataset Information:")
+print(df.info())
+
+print("\nData Types:")
+print(df.dtypes)
+
+print("\nMissing Values:")
+print(df.isnull().sum())
+
+print("\nDuplicate Rows:", df.duplicated().sum())
+
+print("\nStatistical Summary:")
+print(df.describe())
+
+print("\nCategorical Summary:")
+print(df.describe(include="object"))
+
+df["Date"] = pd.to_datetime(df["Date"])
+
+print("\nDate Range:")
+print(df["Date"].min(), "to", df["Date"].max())
+
+print("\nUnique Branches:")
+print(df["Branch"].unique())
+
+print("\nUnique Regions:")
+print(df["Region"].unique())
+
+print("\nStore Types:")
+print(df["Store_Type"].unique())
+
+print("\nBranch Performance:")
+branch_performance = df.groupby("Branch").agg({
+    "Customers": "sum",
+    "Orders": "sum",
+    "Revenue": "sum",
+    "Profit": "sum",
+    "Marketing_Spend": "sum",
+    "Staff_Count": "mean",
+    "Avg_Delivery_Min": "mean",
+    "Customer_Rating": "mean"
+}).sort_values("Profit", ascending=False)
+
+print(branch_performance)
+
+print("\nRegional Performance:")
+region_performance = df.groupby("Region").agg({
+    "Customers": "sum",
+    "Orders": "sum",
+    "Revenue": "sum",
+    "Profit": "sum",
+    "Marketing_Spend": "sum",
+    "Avg_Delivery_Min": "mean",
+    "Customer_Rating": "mean"
+}).sort_values("Profit", ascending=False)
+
+print(region_performance)
+
+print("\nStore Type Performance:")
+store_performance = df.groupby("Store_Type").agg({
+    "Customers": "sum",
+    "Orders": "sum",
+    "Revenue": "sum",
+    "Profit": "sum",
+    "Marketing_Spend": "sum",
+    "Staff_Count": "mean",
+    "Avg_Delivery_Min": "mean",
+    "Customer_Rating": "mean"
+}).sort_values("Profit", ascending=False)
+
+print(store_performance)
+
+print("\nAverage Performance:")
+print(df[[
+    "Customers",
+    "Orders",
+    "Average_Bill",
+    "Revenue",
+    "Food_Cost",
+    "Operating_Cost",
+    "Profit",
+    "Marketing_Spend",
+    "Staff_Count",
+    "Avg_Delivery_Min",
+    "Customer_Rating"
+]].mean())
+
+print("\nMaximum Values:")
+print(df[[
+    "Customers",
+    "Orders",
+    "Revenue",
+    "Profit",
+    "Marketing_Spend",
+    "Staff_Count",
+    "Avg_Delivery_Min",
+    "Customer_Rating"
+]].max())
+
+print("\nMinimum Values:")
+print(df[[
+    "Customers",
+    "Orders",
+    "Revenue",
+    "Profit",
+    "Marketing_Spend",
+    "Staff_Count",
+    "Avg_Delivery_Min",
+    "Customer_Rating"
+]].min())
+
+df["Profit_Margin"] = (df["Profit"] / df["Revenue"]) * 100
+
+df["Order_Conversion_Rate"] = (df["Orders"] / df["Customers"]) * 100
+
+print("\nAverage Profit Margin:")
+print(df["Profit_Margin"].mean())
+
+print("\nAverage Order Conversion Rate:")
+print(df["Order_Conversion_Rate"].mean())
+
+print("\nTop 10 Records by Revenue:")
+print(df.nlargest(10, "Revenue")[[
+    "Branch",
+    "Region",
+    "Store_Type",
+    "Customers",
+    "Revenue",
+    "Profit"
+]])
+
+print("\nTop 10 Records by Profit:")
+print(df.nlargest(10, "Profit")[[
+    "Branch",
+    "Region",
+    "Store_Type",
+    "Customers",
+    "Revenue",
+    "Profit"
+]])
+
+print("\nLowest 10 Records by Profit:")
+print(df.nsmallest(10, "Profit")[[
+    "Branch",
+    "Region",
+    "Store_Type",
+    "Customers",
+    "Revenue",
+    "Profit"
+]])
+
+print("\nPerformance by Promotion:")
+promotion_performance = df.groupby("Promotion", dropna=False).agg({
+    "Customers": "mean",
+    "Orders": "mean",
+    "Revenue": "mean",
+    "Profit": "mean",
+    "Customer_Rating": "mean"
+}).sort_values("Profit", ascending=False)
+
+print(promotion_performance)
+
+print("\nPerformance by Weather:")
+weather_performance = df.groupby("Weather").agg({
+    "Customers": "mean",
+    "Revenue": "mean",
+    "Profit": "mean",
+    "Avg_Delivery_Min": "mean",
+    "Customer_Rating": "mean"
+}).sort_values("Revenue", ascending=False)
+
+print(weather_performance)
+
+print("\nPerformance by Day:")
+day_performance = df.groupby("Day").agg({
+    "Customers": "mean",
+    "Orders": "mean",
+    "Revenue": "mean",
+    "Profit": "mean"
+}).sort_values("Revenue", ascending=False)
+
+print(day_performance)
+
+print("\nPerformance by Month:")
+month_performance = df.groupby("Month").agg({
+    "Customers": "mean",
+    "Revenue": "mean",
+    "Profit": "mean"
+}).sort_values("Revenue", ascending=False)
+
+print(month_performance)
+
+numeric_cols = [
+    "Staff_Count",
+    "Marketing_Spend",
+    "Customers",
+    "Orders",
+    "Average_Bill",
+    "Revenue",
+    "Food_Cost",
+    "Operating_Cost",
+    "Profit",
+    "Avg_Delivery_Min",
+    "Customer_Rating",
+    "Temperature_C",
+    "Humidity_Percent",
+    "Profit_Margin",
+    "Order_Conversion_Rate"
+]
+
+print("\nCorrelation Matrix:")
+correlation_matrix = df[numeric_cols].corr()
+print(correlation_matrix)
+
+plt.figure(figsize=(14, 10))
+sns.heatmap(
+    correlation_matrix,
+    annot=True,
+    cmap="coolwarm",
+    fmt=".2f"
+)
+plt.title("Correlation Matrix of Restaurant Performance Variables")
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(10, 6))
+sns.histplot(df["Revenue"], kde=True)
+plt.title("Revenue Distribution")
+plt.xlabel("Revenue")
+plt.ylabel("Frequency")
+plt.show()
+
+plt.figure(figsize=(10, 6))
+sns.histplot(df["Profit"], kde=True)
+plt.title("Profit Distribution")
+plt.xlabel("Profit")
+plt.ylabel("Frequency")
+plt.show()
+
+plt.figure(figsize=(10, 6))
+sns.histplot(df["Customers"], kde=True)
+plt.title("Customer Distribution")
+plt.xlabel("Customers")
+plt.ylabel("Frequency")
+plt.show()
+
+plt.figure(figsize=(10, 6))
+sns.histplot(df["Customer_Rating"], kde=True)
+plt.title("Customer Rating Distribution")
+plt.xlabel("Customer Rating")
+plt.ylabel("Frequency")
+plt.show()
+
+plt.figure(figsize=(12, 6))
+sns.boxplot(data=df, x="Branch", y="Revenue")
+plt.title("Revenue Distribution Across Branches")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(12, 6))
+sns.boxplot(data=df, x="Region", y="Profit")
+plt.title("Profit Distribution Across Regions")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(10, 6))
+sns.boxplot(data=df, x="Store_Type", y="Revenue")
+plt.title("Revenue by Store Type")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(10, 6))
+sns.barplot(
+    data=branch_performance.reset_index(),
+    x="Branch",
+    y="Revenue"
+)
+plt.title("Total Revenue by Branch")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(10, 6))
+sns.barplot(
+    data=branch_performance.reset_index(),
+    x="Branch",
+    y="Profit"
+)
+plt.title("Total Profit by Branch")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(10, 6))
+sns.barplot(
+    data=region_performance.reset_index(),
+    x="Region",
+    y="Revenue"
+)
+plt.title("Total Revenue by Region")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(10, 6))
+sns.barplot(
+    data=region_performance.reset_index(),
+    x="Region",
+    y="Profit"
+)
+plt.title("Total Profit by Region")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(10, 6))
+sns.scatterplot(
+    data=df,
+    x="Marketing_Spend",
+    y="Revenue",
+    hue="Store_Type"
+)
+plt.title("Marketing Spend vs Revenue")
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(10, 6))
+sns.scatterplot(
+    data=df,
+    x="Customers",
+    y="Revenue",
+    hue="Region"
+)
+plt.title("Customers vs Revenue")
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(10, 6))
+sns.scatterplot(
+    data=df,
+    x="Delivery_Min" if "Delivery_Min" in df.columns else "Avg_Delivery_Min",
+    y="Customer_Rating",
+    hue="Branch"
+)
+plt.title("Delivery Time vs Customer Rating")
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(10, 6))
+sns.scatterplot(
+    data=df,
+    x="Staff_Count",
+    y="Profit",
+    hue="Store_Type"
+)
+plt.title("Staff Count vs Profit")
+plt.tight_layout()
+plt.show()
+
+top_branch = branch_performance["Profit"].idxmax()
+top_region = region_performance["Profit"].idxmax()
+top_store = store_performance["Profit"].idxmax()
+highest_revenue_branch = branch_performance["Revenue"].idxmax()
+highest_rating_branch = df.groupby("Branch")["Customer_Rating"].mean().idxmax()
+highest_customer_branch = branch_performance["Customers"].idxmax()
+
+print("\n" + "=" * 60)
+print("DATA-DRIVEN OBSERVATIONS")
+print("=" * 60)
+
+print(f"1. {highest_revenue_branch} generated the highest total revenue among all branches.")
+
+print(f"2. {top_branch} generated the highest total profit among all branches.")
+
+print(f"3. {top_region} was the most profitable region based on total profit.")
+
+print(f"4. {top_store} was the best-performing store type based on total profit.")
+
+print(f"5. {highest_customer_branch} recorded the highest total number of customers.")
+
+print(f"6. {highest_rating_branch} had the highest average customer rating among the branches.")
+
+revenue_profit_corr = df["Revenue"].corr(df["Profit"])
+marketing_revenue_corr = df["Marketing_Spend"].corr(df["Revenue"])
+customers_revenue_corr = df["Customers"].corr(df["Revenue"])
+delivery_rating_corr = df["Avg_Delivery_Min"].corr(df["Customer_Rating"])
+
+print(
+    f"7. Revenue and profit have a correlation of "
+    f"{revenue_profit_corr:.2f}, indicating their relationship in the dataset."
+)
+
+print(
+    f"8. Marketing spend and revenue have a correlation of "
+    f"{marketing_revenue_corr:.2f}, while customers and revenue have a correlation of "
+    f"{customers_revenue_corr:.2f}. Delivery time and customer rating have a correlation of "
+    f"{delivery_rating_corr:.2f}."
+)
+
+print("\nEDA completed successfully!")

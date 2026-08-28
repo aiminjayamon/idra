@@ -1,0 +1,312 @@
+import pandas as pd
+import numpy as np
+
+df = pd.read_csv("Day16_Student_Wellbeing_Survey.csv")
+
+stats_vars = [
+    "Weekly_Study_Hours",
+    "Average_Sleep_Hours",
+    "Daily_Screen_Time_Hours",
+    "Stress_Score",
+    "Academic_Readiness_Score"
+]
+
+outlier_vars = [
+    "Weekly_Study_Hours",
+    "Daily_Screen_Time_Hours",
+    "Commute_Time_Minutes",
+    "Monthly_Discretionary_Spending"
+]
+
+print("DATASET INSPECTION")
+print("=" * 60)
+print("Shape:", df.shape)
+print("\nColumns:")
+print(df.columns.tolist())
+print("\nData Types:")
+print(df.dtypes)
+print("\nMissing Values:")
+print(df.isnull().sum())
+print("\nDuplicate Rows:", df.duplicated().sum())
+print("\nFirst 5 Rows:")
+display(df.head())
+
+for col in stats_vars + outlier_vars + ["Year_of_Study"]:
+    df[col] = pd.to_numeric(df[col], errors="coerce")
+
+print("\nDESCRIPTIVE STATISTICS")
+print("=" * 60)
+
+summary = pd.DataFrame(index=stats_vars)
+summary["Mean"] = df[stats_vars].mean()
+summary["Median"] = df[stats_vars].median()
+summary["Mode"] = df[stats_vars].mode().iloc[0]
+summary["Range"] = df[stats_vars].max() - df[stats_vars].min()
+summary["Variance"] = df[stats_vars].var()
+summary["Standard Deviation"] = df[stats_vars].std()
+summary["Q1"] = df[stats_vars].quantile(0.25)
+summary["Q3"] = df[stats_vars].quantile(0.75)
+summary["IQR"] = summary["Q3"] - summary["Q1"]
+
+display(summary.round(4))
+
+greatest_variability = summary["Standard Deviation"].idxmax()
+print("Variable with greatest variability:", greatest_variability)
+
+print("\nFORMULAS")
+print("Range = Maximum - Minimum")
+print("Variance = Σ(x - mean)² / (n - 1)")
+print("Standard Deviation = √Variance")
+print("IQR = Q3 - Q1")
+print("Interpretation: The variable with the highest standard deviation has the greatest variability.")
+
+print("\nIQR OUTLIER ANALYSIS")
+print("=" * 60)
+
+outlier_data = []
+
+for col in outlier_vars:
+    q1 = df[col].quantile(0.25)
+    q3 = df[col].quantile(0.75)
+    iqr = q3 - q1
+    lower = q1 - 1.5 * iqr
+    upper = q3 + 1.5 * iqr
+    mask = (df[col] < lower) | (df[col] > upper)
+    
+    outlier_data.append([
+        col, q1, q3, iqr, lower, upper, mask.sum()
+    ])
+
+outlier_table = pd.DataFrame(
+    outlier_data,
+    columns=[
+        "Variable", "Q1", "Q3", "IQR",
+        "Lower Bound", "Upper Bound", "Outlier Count"
+    ]
+)
+
+display(outlier_table.round(4))
+
+print("Formula: Lower Bound = Q1 - 1.5 × IQR")
+print("Formula: Upper Bound = Q3 + 1.5 × IQR")
+print("Interpretation: Values below the lower bound or above the upper bound are outliers.")
+
+col = "Weekly_Study_Hours"
+
+q1 = df[col].quantile(0.25)
+q3 = df[col].quantile(0.75)
+iqr = q3 - q1
+lower = q1 - 1.5 * iqr
+upper = q3 + 1.5 * iqr
+
+df_without_outliers = df[
+    (df[col] >= lower) & (df[col] <= upper)
+]
+
+before_mean = df[col].mean()
+before_median = df[col].median()
+after_mean = df_without_outliers[col].mean()
+after_median = df_without_outliers[col].median()
+
+print("\nBEFORE AND AFTER OUTLIER REMOVAL")
+print("=" * 60)
+print("Variable:", col)
+print(f"Before Mean   = {before_mean:.4f}")
+print(f"Before Median = {before_median:.4f}")
+print(f"After Mean    = {after_mean:.4f}")
+print(f"After Median  = {after_median:.4f}")
+print("Interpretation: Comparing the values shows how detected outliers influence central tendency.")
+
+A = df["Part_Time_Job"].astype(str).str.strip().str.lower() == "yes"
+B = df["Stress_Score"] >= 7
+C = df["Scholarship"].astype(str).str.strip().str.lower() == "yes"
+
+exercise_columns = [
+    col for col in df.columns
+    if "exercise" in col.lower() and "day" in col.lower()
+]
+
+exercise_col = exercise_columns[0]
+D = pd.to_numeric(df[exercise_col], errors="coerce") >= 3
+
+N = len(df)
+
+pA = A.sum() / N
+pB = B.sum() / N
+pC = C.sum() / N
+pD = D.sum() / N
+pA_or_B = (A | B).sum() / N
+pA_and_B = (A & B).sum() / N
+pA_given_B = (A & B).sum() / B.sum()
+pB_given_A = (A & B).sum() / A.sum()
+
+print("\nPROBABILITY ANALYSIS")
+print("=" * 60)
+
+print("Event A: Part_Time_Job = Yes")
+print("Event B: Stress_Score >= 7")
+print("Event C: Scholarship = Yes")
+print("Event D: Exercises at least 3 days per week")
+
+print("\nFormulas:")
+print("P(A) = Number of A outcomes / Total outcomes")
+print("P(A or B) = P(A) + P(B) - P(A and B)")
+print("P(A and B) = Number of A and B outcomes / Total outcomes")
+print("P(A|B) = P(A and B) / P(B)")
+print("P(B|A) = P(A and B) / P(A)")
+
+print(f"\nP(A) = {pA:.6f}")
+print(f"P(B) = {pB:.6f}")
+print(f"P(C) = {pC:.6f}")
+print(f"P(D) = {pD:.6f}")
+print(f"P(A or B) = {pA_or_B:.6f}")
+print(f"P(A and B) = {pA_and_B:.6f}")
+print(f"P(A|B) = {pA_given_B:.6f}")
+print(f"P(B|A) = {pB_given_A:.6f}")
+
+print("\nYEAR OF STUDY MUTUAL EXCLUSIVITY")
+print("=" * 60)
+
+year1 = df["Year_of_Study"] == 1
+year4 = df["Year_of_Study"] == 4
+
+intersection = (year1 & year4).sum()
+
+print("P(Year 1 and Year 4) =", intersection / N)
+
+if intersection == 0:
+    print("Conclusion: Year 1 and Year 4 are mutually exclusive.")
+else:
+    print("Conclusion: Year 1 and Year 4 are not mutually exclusive.")
+
+print("\nINDEPENDENCE OF A AND B")
+print("=" * 60)
+
+product = pA * pB
+
+print(f"P(A and B) = {pA_and_B:.6f}")
+print(f"P(A) × P(B) = {product:.6f}")
+print(f"Difference = {abs(pA_and_B - product):.6f}")
+
+if np.isclose(pA_and_B, product, atol=0.01):
+    print("Conclusion: A and B appear approximately independent.")
+else:
+    print("Conclusion: A and B do not appear independent.")
+
+print("Formula for independence: P(A and B) = P(A) × P(B)")
+
+print("\nBAYES' THEOREM")
+print("=" * 60)
+
+not_A = ~A
+
+pB_given_not_A = (B & not_A).sum() / not_A.sum()
+
+bayes_result = (
+    pB_given_A * pA
+) / (
+    pB_given_A * pA + pB_given_not_A * (1 - pA)
+)
+
+print("Formula:")
+print("P(A|B) = [P(B|A) × P(A)] / [P(B|A) × P(A) + P(B|not A) × P(not A)]")
+
+print(f"\nP(B|A) = {pB_given_A:.6f}")
+print(f"P(B|not A) = {pB_given_not_A:.6f}")
+print(f"P(A) = {pA:.6f}")
+print(f"P(not A) = {1 - pA:.6f}")
+print(f"Bayes P(A|B) = {bayes_result:.6f}")
+print(f"Direct P(A|B) = {pA_given_B:.6f}")
+
+if np.isclose(bayes_result, pA_given_B):
+    print("Conclusion: Bayes' theorem agrees with the direct conditional probability.")
+else:
+    print("Conclusion: The results differ due to numerical or data-handling differences.")
+
+print("\nNORMAL DISTRIBUTION ANALYSIS")
+print("=" * 60)
+
+readiness = df["Academic_Readiness_Score"].dropna()
+
+mean_readiness = readiness.mean()
+std_readiness = readiness.std()
+
+highest_score = readiness.max()
+lowest_score = readiness.min()
+
+highest_z = (highest_score - mean_readiness) / std_readiness
+lowest_z = (lowest_score - mean_readiness) / std_readiness
+
+print("Formula:")
+print("Z = (X - Mean) / Standard Deviation")
+
+print(f"\nMean = {mean_readiness:.4f}")
+print(f"Standard Deviation = {std_readiness:.4f}")
+print(f"Highest Academic Readiness Score = {highest_score:.4f}")
+print(f"Z-score of Highest Score = {highest_z:.4f}")
+print(f"Lowest Academic Readiness Score = {lowest_score:.4f}")
+print(f"Z-score of Lowest Score = {lowest_z:.4f}")
+
+print("\nInterpretation:")
+print(
+    f"The highest score is {abs(highest_z):.2f} standard deviations "
+    f"above the mean."
+)
+print(
+    f"The lowest score is {abs(lowest_z):.2f} standard deviations "
+    f"below the mean."
+)
+
+print("\n68-95-99.7 EMPIRICAL RULE")
+print("=" * 60)
+
+range_1_lower = mean_readiness - std_readiness
+range_1_upper = mean_readiness + std_readiness
+
+range_2_lower = mean_readiness - 2 * std_readiness
+range_2_upper = mean_readiness + 2 * std_readiness
+
+range_3_lower = mean_readiness - 3 * std_readiness
+range_3_upper = mean_readiness + 3 * std_readiness
+
+print("Within 1 SD: 68%")
+print(f"Range: {range_1_lower:.4f} to {range_1_upper:.4f}")
+
+print("\nWithin 2 SD: 95%")
+print(f"Range: {range_2_lower:.4f} to {range_2_upper:.4f}")
+
+print("\nWithin 3 SD: 99.7%")
+print(f"Range: {range_3_lower:.4f} to {range_3_upper:.4f}")
+
+print("\nSTATISTICAL OBSERVATIONS")
+print("=" * 60)
+
+print(
+    f"1. {greatest_variability} has the greatest variability based on "
+    f"standard deviation."
+)
+
+print(
+    f"2. Weekly study hours have a mean of {before_mean:.2f} and a median "
+    f"of {before_median:.2f}; after removing IQR outliers, the mean is "
+    f"{after_mean:.2f} and the median is {after_median:.2f}."
+)
+
+print(
+    f"3. The probability that a student has a part-time job is "
+    f"{pA:.2%}, while the probability of having a stress score of at "
+    f"least 7 is {pB:.2%}."
+)
+
+print(
+    f"4. P(A and B) = {pA_and_B:.4f}, compared with "
+    f"P(A) × P(B) = {product:.4f}; therefore A and B "
+    f"{'appear approximately independent' if np.isclose(pA_and_B, product, atol=0.01) else 'do not appear independent'}."
+)
+
+print(
+    f"5. Academic readiness has a mean of {mean_readiness:.2f} and a "
+    f"standard deviation of {std_readiness:.2f}. Under the empirical "
+    f"rule, approximately 68%, 95%, and 99.7% of students are expected "
+    f"to fall within 1, 2, and 3 standard deviations of the mean, respectively."
+)

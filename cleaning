@@ -1,0 +1,76 @@
+import pandas as pd
+
+df = pd.read_csv("Day11_Messy_Company_Employee_Dataset.csv")
+
+print("Before Cleaning")
+print("Shape:", df.shape)
+print("\nMissing Values:")
+print(df.isnull().sum())
+print("\nDuplicate Records:", df.duplicated().sum())
+print("\nData Types:")
+print(df.dtypes)
+
+df["Employee_ID"] = df["Employee_ID"].astype(str).str.strip()
+df["Employee_Name"] = df["Employee_Name"].astype(str).str.strip()
+df["Department"] = df["Department"].str.strip().str.title()
+df["Job_Title"] = df["Job_Title"].str.strip().str.title()
+df["Gender"] = df["Gender"].str.strip().str.title()
+df["City"] = df["City"].str.strip().str.title()
+df["Work_Mode"] = df["Work_Mode"].str.strip().str.title()
+
+df["Age"] = df["Age"].fillna(df["Age"].median())
+df["Annual_Salary"] = df["Annual_Salary"].fillna(df["Annual_Salary"].median())
+df["Experience_Years"] = df["Experience_Years"].fillna(df["Experience_Years"].median())
+df["Performance_Score"] = df["Performance_Score"].fillna(df["Performance_Score"].median())
+
+df["Department"] = df["Department"].fillna(df["Department"].mode()[0])
+df["Gender"] = df["Gender"].fillna(df["Gender"].mode()[0])
+df["City"] = df["City"].fillna(df["City"].mode()[0])
+df["Work_Mode"] = df["Work_Mode"].fillna(df["Work_Mode"].mode()[0])
+
+df["Joining_Date"] = pd.to_datetime(df["Joining_Date"], errors="coerce")
+df["Joining_Date"] = df["Joining_Date"].ffill()
+df["Joining_Date"] = df["Joining_Date"].bfill()
+
+df = df.drop_duplicates()
+df = df.reset_index(drop=True)
+
+print("\nAfter Cleaning")
+print("Shape:", df.shape)
+print("\nMissing Values:")
+print(df.isnull().sum())
+print("\nDuplicate Records:", df.duplicated().sum())
+print("\nData Types:")
+print(df.dtypes)
+
+print("\nCleaning Summary")
+print("Initial Rows:", 157)
+print("Final Rows:", len(df))
+print("Duplicate Records Removed:", 157 - len(df))
+print("Remaining Missing Values:", df.isnull().sum().sum())
+
+df.to_csv("Cleaned_Company_Employee_Dataset.csv", index=False)
+
+summary = pd.DataFrame({
+    "Cleaning_Step": [
+        "Missing numerical values",
+        "Missing categorical values",
+        "Inconsistent text entries",
+        "Joining date conversion",
+        "Missing joining dates",
+        "Duplicate records"
+    ],
+    "Method_Used": [
+        "Median imputation",
+        "Mode imputation",
+        "Strip and title case standardization",
+        "pd.to_datetime()",
+        "Forward fill and backward fill",
+        "drop_duplicates()"
+    ]
+})
+
+summary.to_csv("Cleaning_Summary.csv", index=False)
+
+print("\nCleaned dataset saved as: Cleaned_Company_Employee_Dataset.csv")
+print("Cleaning summary saved as: Cleaning_Summary.csv")
